@@ -71,7 +71,7 @@ const updateData = async (filter, flag, bustCache = false) => {
       throw new Error('Failed to fetch data');
     }
     
-    const data = await response.json();
+    let data = await response.json();
     const lastModified = response.headers.get('Last-Modified');
     const lastUpdateEl = document.getElementById('last-update-text');
     
@@ -98,105 +98,91 @@ const updateData = async (filter, flag, bustCache = false) => {
 
     // Reset counter each time we render
     totalCompletionsYesCount = 0;
-    
-    // Return the processed data
-    return data;
+
+    // Reset milestone if previous was achieved
+    if (activeMilestoneIndex < MILESTONES.length - 1 && totalCompletionsYesCount >= MILESTONES[activeMilestoneIndex]) {
+      activeMilestoneIndex++;
+    }
+
+    let html = "";
+
+    const truncate = (s, n = 60) => {
+      if (!s) return '';
+      return s.length > n ? `<span title="${s}">${s.slice(0,n)}...` + `</span>` : s;
+    };
+
+    data.forEach((d, i) => {
+      // Safe reads for preserved columns
+      const redemption = d['Access Code Redemption Status'] || d['Campaign Code Redemption Status'] || '';
+      const allSkill = d['All Skill Badges & Games Completed'] || d['All 3 Pathways Completed - Yes or No'] || '';
+      const badgesCount = d['# of Skill Badges Completed'] || 0;
+      const badgesNames = d['Names of Completed Skill Badges'] || '';
+      const arcadeCount = d['# of Arcade Games Completed'] || 0;
+      const arcadeNames = d['Names of Completed Arcade Games'] || '';
+
+      // Determine completion according to new rule: at least 19 skill badges and >=1 arcade game
+      const badgesNumeric = parseInt(badgesCount, 10) || 0;
+      const arcadeNumeric = parseInt(arcadeCount, 10) || 0;
+      const completedByRule = badgesNumeric >= 19 && arcadeNumeric >= 1;
+
+      if (completedByRule) {
+        totalCompletionsYesCount++;
+      }
+
+      // Determine row styling with Tailwind classes
+      let rowClass = 'hover:bg-gray-50 transition-colors';
+      if (allSkill === 'Yes') {
+        rowClass = 'bg-green-100 hover:bg-green-200 transition-colors';
+      } else if (redemption === 'No') {
+        rowClass = 'bg-red-100 hover:bg-red-200 transition-colors';
+      }
+
+      html += `<tr class="${rowClass}">
+                    <td class="px-4 py-3 text-center font-medium text-gray-700">${i + 1}</td>
+                    <td class="px-4 py-3"><a href="${d["Google Cloud Skills Boost Profile URL"] || '#'}" target="_blank" class="text-blue-600 hover:text-blue-800 font-medium hover:underline">${d["User Name"] || ''}</a></td>
+                    <td class="px-4 py-3 text-center text-sm">${redemption}</td>
+                    <td class="px-4 py-3 text-center text-sm font-semibold ${allSkill === 'Yes' ? 'text-green-600' : 'text-gray-600'}">${allSkill}</td>
+                    <td class="px-4 py-3 text-center font-semibold text-blue-600">${badgesCount}</td>
+                    <td class="px-4 py-3 text-sm text-gray-600">${truncate(badgesNames)}</td>
+                    <td class="px-4 py-3 text-center font-semibold text-purple-600">${arcadeCount}</td>
+                    <td class="px-4 py-3 text-sm text-gray-600">${truncate(arcadeNames)}</td>
+                    <td class="px-4 py-3 text-center text-xl">${d["Gen AI Arcade Game Completion"] === "1" ? "💯" : "❌"}</td>
+                    <td class="px-4 py-3 text-center font-bold text-lg text-gray-800">${(parseInt(badgesCount,10)||0) + (parseInt(arcadeCount,10)||0)}</td>
+      </tr>`;
+    });
+
+    console.log("Completions (>=19 badges + >=1 arcade):", totalCompletionsYesCount);
+
+    // After counting, auto-advance milestone while possible
+    while (activeMilestoneIndex < MILESTONES.length - 1 && totalCompletionsYesCount >= MILESTONES[activeMilestoneIndex]) {
+      activeMilestoneIndex++;
+    }
+
+    // Update milestone UI
+    const milestoneLabelEl = document.getElementById('milestone-label');
+    const milestoneStatusEl = document.getElementById('milestone-status');
+    const activeTarget = MILESTONES[activeMilestoneIndex];
+    if (milestoneLabelEl) milestoneLabelEl.textContent = `Active milestone: ${activeTarget}`;
+    if (milestoneStatusEl) {
+      if (totalCompletionsYesCount >= activeTarget) {
+        milestoneStatusEl.textContent = `Reached ${activeTarget}!`;
+      } else {
+        milestoneStatusEl.textContent = `${totalCompletionsYesCount}/${activeTarget} completions`;
+      }
+    }
+
+    if (flag) changeWidth();
+    document.getElementById("gccp_body").innerHTML = html;
   } catch (error) {
     console.error('Error fetching data:', error);
-    throw error;
+    const lastUpdateEl = document.getElementById('last-update-text');
+    if (lastUpdateEl) {
+      lastUpdateEl.textContent = '❌ Failed to load data. Please try refreshing.';
+    }
   } finally {
     // Hide loading indicator
     if (loadingEl) loadingEl.classList.add('hidden');
   }
-  } catch (e) {
-    console.error('Could not fetch last modified time:', e);
-  }
-  
-  if (filter !== "") {
-    data = data.filter((el) => {
-      return el["User Name"] && el["User Name"].toLowerCase().includes(filter.toLowerCase());
-    });
-  }
-
-  data.sort(currentComparator);
-
-  // Reset counter each time we render
-  totalCompletionsYesCount = 0;
-
-  // Reset milestone if previous was achieved
-  if (activeMilestoneIndex < MILESTONES.length - 1 && totalCompletionsYesCount >= MILESTONES[activeMilestoneIndex]) {
-    activeMilestoneIndex++;
-  }
-
-  let html = "";
-
-  const truncate = (s, n = 60) => {
-    if (!s) return '';
-    return s.length > n ? `<span title="${s}">${s.slice(0,n)}...` + `</span>` : s;
-  };
-
-  data.forEach((d, i) => {
-    // Safe reads for preserved columns
-    const redemption = d['Access Code Redemption Status'] || d['Campaign Code Redemption Status'] || '';
-    const allSkill = d['All Skill Badges & Games Completed'] || d['All 3 Pathways Completed - Yes or No'] || '';
-    const badgesCount = d['# of Skill Badges Completed'] || 0;
-    const badgesNames = d['Names of Completed Skill Badges'] || '';
-    const arcadeCount = d['# of Arcade Games Completed'] || 0;
-    const arcadeNames = d['Names of Completed Arcade Games'] || '';
-
-    // Determine completion according to new rule: at least 19 skill badges and >=1 arcade game
-    const badgesNumeric = parseInt(badgesCount, 10) || 0;
-    const arcadeNumeric = parseInt(arcadeCount, 10) || 0;
-    const completedByRule = badgesNumeric >= 19 && arcadeNumeric >= 1;
-
-    if (completedByRule) {
-      totalCompletionsYesCount++;
-    }
-
-    // Determine row styling with Tailwind classes
-    let rowClass = 'hover:bg-gray-50 transition-colors';
-    if (allSkill === 'Yes') {
-      rowClass = 'bg-green-100 hover:bg-green-200 transition-colors';
-    } else if (redemption === 'No') {
-      rowClass = 'bg-red-100 hover:bg-red-200 transition-colors';
-    }
-
-    html += `<tr class="${rowClass}">
-                  <td class="px-4 py-3 text-center font-medium text-gray-700">${i + 1}</td>
-                  <td class="px-4 py-3"><a href="${d["Google Cloud Skills Boost Profile URL"] || '#'}" target="_blank" class="text-blue-600 hover:text-blue-800 font-medium hover:underline">${d["User Name"] || ''}</a></td>
-                  <td class="px-4 py-3 text-center text-sm">${redemption}</td>
-                  <td class="px-4 py-3 text-center text-sm font-semibold ${allSkill === 'Yes' ? 'text-green-600' : 'text-gray-600'}">${allSkill}</td>
-                  <td class="px-4 py-3 text-center font-semibold text-blue-600">${badgesCount}</td>
-                  <td class="px-4 py-3 text-sm text-gray-600">${truncate(badgesNames)}</td>
-                  <td class="px-4 py-3 text-center font-semibold text-purple-600">${arcadeCount}</td>
-                  <td class="px-4 py-3 text-sm text-gray-600">${truncate(arcadeNames)}</td>
-                  <td class="px-4 py-3 text-center text-xl">${d["Gen AI Arcade Game Completion"] === "1" ? "💯" : "❌"}</td>
-                  <td class="px-4 py-3 text-center font-bold text-lg text-gray-800">${(parseInt(badgesCount,10)||0) + (parseInt(arcadeCount,10)||0)}</td>
-    </tr>`;
-  });
-
-  console.log("Completions (>=19 badges + >=1 arcade):", totalCompletionsYesCount);
-
-  // After counting, auto-advance milestone while possible
-  while (activeMilestoneIndex < MILESTONES.length - 1 && totalCompletionsYesCount >= MILESTONES[activeMilestoneIndex]) {
-    activeMilestoneIndex++;
-  }
-
-  // Update milestone UI
-  const milestoneLabelEl = document.getElementById('milestone-label');
-  const milestoneStatusEl = document.getElementById('milestone-status');
-  const activeTarget = MILESTONES[activeMilestoneIndex];
-  if (milestoneLabelEl) milestoneLabelEl.textContent = `Active milestone: ${activeTarget}`;
-  if (milestoneStatusEl) {
-    if (totalCompletionsYesCount >= activeTarget) {
-      milestoneStatusEl.textContent = `Reached ${activeTarget}!`;
-    } else {
-      milestoneStatusEl.textContent = `${totalCompletionsYesCount}/${activeTarget} completions`;
-    }
-  }
-
-  if (flag) changeWidth();
-  document.getElementById("gccp_body").innerHTML = html;
 };
 
 updateData("", true);
@@ -237,45 +223,8 @@ const refreshText = document.getElementById('refresh-text');
 
 if (refreshBtn && refreshStatus && refreshIcon && refreshText) {
   refreshBtn.addEventListener('click', async () => {
-    try {
-      // Disable button and show loading state
-      refreshBtn.disabled = true;
-      refreshIcon.classList.add('animate-spin');
-      refreshText.textContent = 'Refreshing...';
-      
-      // Update data with cache busting
-      const updatedData = await updateData('', '', true);
-      
-      // Re-render the table with updated data
-      renderTable(updatedData);
-      updateProgressBar();
-      
-      // Show success state
-      refreshText.textContent = 'Refresh Data';
-      refreshStatus.textContent = 'Data updated successfully!';
-      refreshStatus.classList.remove('hidden');
-      setTimeout(() => {
-        refreshStatus.classList.add('hidden');
-      }, 3000);
-    } catch (error) {
-      // Show error state
-      refreshText.textContent = 'Refresh Failed';
-      refreshStatus.textContent = 'Failed to update data. Please try again.';
-      refreshStatus.classList.remove('hidden');
-      console.error('Refresh failed:', error);
-    } finally {
-      // Reset button state
-      refreshBtn.disabled = false;
-      refreshIcon.classList.remove('animate-spin');
-      setTimeout(() => {
-        refreshText.textContent = 'Refresh Data';
-      }, 2000);
-    }
-  });
-}
-  });
-}
-    }
+    // Disable button and show loading state
+    refreshBtn.disabled = true;
     refreshIcon.classList.add('spinner');
     refreshText.textContent = 'Refreshing...';
     
@@ -284,51 +233,19 @@ if (refreshBtn && refreshStatus && refreshIcon && refreshText) {
     refreshStatus.style.color = '#4285f4';
     
     try {
-      const response = await fetch('https://gdg-google-cloud-study-jams-2025-pgcc.onrender.com/refresh', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
+      // Update data with cache busting
+      await updateData(input.value, true, true);
       
-      const result = await response.json();
+      // Show success message
+      refreshStatus.innerHTML = '<div class="slide-in">🎉 Leaderboard updated with latest data!</div>';
+      refreshStatus.style.color = '#0f9d58';
       
-      if (result.success) {
-        // Show success message
-        refreshStatus.innerHTML = '<div class="slide-in">✅ Data refreshed successfully! Updating leaderboard...</div>';
-        refreshStatus.style.color = '#0f9d58';
-        
-        // Reload the data from data.json with cache-busting
-        setTimeout(() => {
-          // Force fresh fetch with cache-busting
-          updateData(input.value, true, true);
-          
-          // Update the last modified timestamp with animation
-          const lastUpdateEl = document.getElementById('last-update-text');
-          if (lastUpdateEl) {
-            lastUpdateEl.classList.add('slide-in');
-          }
-          
-          // Show final success message
-          refreshStatus.innerHTML = '<div class="slide-in">🎉 Leaderboard updated with latest data!</div>';
-          refreshStatus.style.color = '#0f9d58';
-          
-          // Clear status after 3 seconds
-          setTimeout(() => {
-            refreshStatus.innerHTML = '';
-          }, 3000);
-        }, 1500);
-      } else {
-        refreshStatus.innerHTML = `<div class="slide-in">❌ Refresh failed: ${result.error || 'Unknown error'}</div>`;
-        refreshStatus.style.color = '#db4437';
-        
-        // Clear error after 5 seconds
-        setTimeout(() => {
-          refreshStatus.innerHTML = '';
-        }, 5000);
-      }
+      // Clear status after 3 seconds
+      setTimeout(() => {
+        refreshStatus.innerHTML = '';
+      }, 3000);
     } catch (error) {
-      refreshStatus.innerHTML = '<div class="slide-in">❌ Could not connect to refresh server. Make sure it\'s running on port 5001!</div>';
+      refreshStatus.innerHTML = '<div class="slide-in">❌ Failed to update data. Please try again.</div>';
       refreshStatus.style.color = '#db4437';
       console.error('Refresh error:', error);
       
