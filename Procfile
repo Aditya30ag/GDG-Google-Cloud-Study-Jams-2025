@@ -1,1 +1,1 @@
-web: cd conversion && uvicorn refresh_server:app --host 0.0.0.0 --port $PORT --workers 4
+web: cd conversion && pip install --upgrade pip && uvicorn refresh_server:app --host 0.0.0.0 --port $PORT --workers 4
