@@ -37,44 +37,46 @@ let currentComparator = numericCompareFactory((r) => {
 const updateData = async (filter, flag, bustCache = false) => {
   const serverUrl = 'https://gdg-google-cloud-study-jams-2025-pgcc.onrender.com';
   
-  // Trigger refresh on the backend first if bustCache is true
-  if (bustCache) {
-    try {
-      const response = await fetch(`${serverUrl}/refresh`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Error refreshing data:', errorText);
-        throw new Error(errorText);
-      }
-    } catch (error) {
-      console.error('Error refreshing data:', error);
-      throw error;
-    }
-  }
+  // Show loading state
+  const loadingEl = document.getElementById('loading-indicator');
+  if (loadingEl) loadingEl.classList.remove('hidden');
   
   try {
+    // Trigger refresh on the backend first if bustCache is true
+    if (bustCache) {
+      try {
+        const refreshResponse = await fetch(`${serverUrl}/refresh`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        if (!refreshResponse.ok) {
+          const errorText = await refreshResponse.text();
+          console.error('Error refreshing data:', errorText);
+          throw new Error(errorText);
+        }
+        // Wait a moment for the server to process the data
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      } catch (error) {
+        console.error('Error refreshing data:', error);
+        throw error;
+      }
+    }
+    
     // Add cache-busting parameter if needed
     const cacheBuster = bustCache ? `?t=${Date.now()}` : '';
     const response = await fetch(`${serverUrl}/data${cacheBuster}`);
     if (!response.ok) {
       throw new Error('Failed to fetch data');
     }
-    let data = await response.json();
-  
-  // Get last modified time from data.json
-  try {
-    const response = await fetch(`${serverUrl}/data${cacheBuster}`);
+    
+    const data = await response.json();
     const lastModified = response.headers.get('Last-Modified');
     const lastUpdateEl = document.getElementById('last-update-text');
     
-    if (lastModified && lastUpdateEl) {
-      const date = new Date(lastModified);
+    if (lastUpdateEl) {
+      const date = lastModified ? new Date(lastModified) : new Date();
       const formattedDate = date.toLocaleString('en-US', {
         month: 'short',
         day: 'numeric',
@@ -84,19 +86,28 @@ const updateData = async (filter, flag, bustCache = false) => {
         hour12: true
       });
       lastUpdateEl.textContent = `📊 Last updated: ${formattedDate} • Click "Refresh Data" to update now!`;
-    } else if (lastUpdateEl) {
-      // Fallback: show current time if Last-Modified header is not available
-      const now = new Date();
-      const formattedDate = now.toLocaleString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true
-      });
-      lastUpdateEl.textContent = `📊 Last updated: ${formattedDate} • Click "Refresh Data" to update now!`;
     }
+
+    if (filter !== "") {
+      data = data.filter((el) => {
+        return el["User Name"] && el["User Name"].toLowerCase().includes(filter.toLowerCase());
+      });
+    }
+
+    data.sort(currentComparator);
+
+    // Reset counter each time we render
+    totalCompletionsYesCount = 0;
+    
+    // Return the processed data
+    return data;
+  } catch (error) {
+    console.error('Error fetching data:', error);
+    throw error;
+  } finally {
+    // Hide loading indicator
+    if (loadingEl) loadingEl.classList.add('hidden');
+  }
   } catch (e) {
     console.error('Could not fetch last modified time:', e);
   }
@@ -233,7 +244,11 @@ if (refreshBtn && refreshStatus && refreshIcon && refreshText) {
       refreshText.textContent = 'Refreshing...';
       
       // Update data with cache busting
-      await updateData('', '', true);
+      const updatedData = await updateData('', '', true);
+      
+      // Re-render the table with updated data
+      renderTable(updatedData);
+      updateProgressBar();
       
       // Show success state
       refreshText.textContent = 'Refresh Data';
@@ -256,6 +271,8 @@ if (refreshBtn && refreshStatus && refreshIcon && refreshText) {
         refreshText.textContent = 'Refresh Data';
       }, 2000);
     }
+  });
+}
   });
 }
     }

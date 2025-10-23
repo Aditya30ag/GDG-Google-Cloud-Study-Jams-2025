@@ -70,7 +70,18 @@ async def refresh_data():
         # Get the path to scrape_profiles.py
         script_dir = os.path.dirname(os.path.abspath(__file__))
         scraper_path = os.path.join(script_dir, 'scrape_profiles.py')
-        data_path = os.path.join(os.path.dirname(script_dir), 'main', 'data.json')
+        
+        if os.environ.get('RENDER'):
+            data_path = '/tmp/data.json'
+        else:
+            data_path = os.path.join(os.path.dirname(script_dir), 'main', 'data.json')
+            
+        # Copy initial data.json to /tmp if it doesn't exist on Render
+        if os.environ.get('RENDER') and not os.path.exists(data_path):
+            source_data = os.path.join(os.path.dirname(script_dir), 'main', 'data.json')
+            if os.path.exists(source_data):
+                import shutil
+                shutil.copy2(source_data, data_path)
         
         # Run the scraper with default settings
         result = subprocess.run(
