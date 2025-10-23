@@ -4,7 +4,8 @@ FastAPI server to trigger the scraper when refresh is clicked on the site.
 """
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 import subprocess
 import sys
 import os
@@ -26,11 +27,29 @@ app.add_middleware(
         "http://localhost:5000",
         "http://127.0.0.1:8000",
         "http://127.0.0.1:5000",
+        "https://gdg-google-cloud-study-jams-2025-pgcc.onrender.com",
     ],
     allow_credentials=True,
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
+
+# Get the path to data.json
+script_dir = os.path.dirname(os.path.abspath(__file__))
+# Use a writable directory on Render
+if os.environ.get('RENDER'):
+    data_path = '/tmp/data.json'
+else:
+    data_path = os.path.join(os.path.dirname(script_dir), 'main', 'data.json')
+
+@app.get("/data")
+async def get_data():
+    """
+    Serve the data.json file
+    """
+    if os.path.exists(data_path):
+        return FileResponse(data_path)
+    raise HTTPException(status_code=404, detail="Data file not found")
 
 @app.post("/refresh", response_model=Dict[str, Optional[str]])
 async def refresh_data():

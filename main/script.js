@@ -51,11 +51,12 @@ const updateData = async (filter, flag, bustCache = false) => {
   
   // Add cache-busting parameter if needed
   const cacheBuster = bustCache ? `?t=${Date.now()}` : '';
-  let data = await (await fetch(`./data.json${cacheBuster}`)).json();
+  const serverUrl = 'https://gdg-google-cloud-study-jams-2025-pgcc.onrender.com';
+  let data = await (await fetch(`${serverUrl}/data${cacheBuster}`)).json();
   
   // Get last modified time from data.json
   try {
-    const response = await fetch(`./data.json${cacheBuster}`);
+    const response = await fetch(`${serverUrl}/data${cacheBuster}`);
     const lastModified = response.headers.get('Last-Modified');
     const lastUpdateEl = document.getElementById('last-update-text');
     
