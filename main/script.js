@@ -35,24 +35,32 @@ let currentComparator = numericCompareFactory((r) => {
 });
 
 const updateData = async (filter, flag, bustCache = false) => {
+  const serverUrl = 'https://gdg-google-cloud-study-jams-2025-pgcc.onrender.com';
+  
   // Trigger refresh on the backend first if bustCache is true
   if (bustCache) {
     try {
-      await fetch('https://gdg-google-cloud-study-jams-2025-pgcc.onrender.com/refresh', {
+      const response = await fetch(`${serverUrl}/refresh`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
       });
+      
+      if (!response.ok) {
+        console.error('Error refreshing data:', await response.text());
+        return;
+      }
     } catch (error) {
       console.error('Error refreshing data:', error);
+      return;
     }
   }
   
-  // Add cache-busting parameter if needed
-  const cacheBuster = bustCache ? `?t=${Date.now()}` : '';
-  const serverUrl = 'https://gdg-google-cloud-study-jams-2025-pgcc.onrender.com';
-  let data = await (await fetch(`${serverUrl}/data${cacheBuster}`)).json();
+  try {
+    // Add cache-busting parameter if needed
+    const cacheBuster = bustCache ? `?t=${Date.now()}` : '';
+    let data = await (await fetch(`${serverUrl}/static/data.json${cacheBuster}`)).json();
   
   // Get last modified time from data.json
   try {

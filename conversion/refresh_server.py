@@ -4,7 +4,7 @@ FastAPI server to trigger the scraper when refresh is clicked on the site.
 """
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, FileResponse
+from fastapi.responses import JSONResponse, FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 import subprocess
 import sys
@@ -21,26 +21,32 @@ app = FastAPI(
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://aditya30ag.github.io",
-        "http://localhost:8000",
-        "http://localhost:5000",
-        "http://127.0.0.1:8000",
-        "http://127.0.0.1:5000",
-        "https://gdg-google-cloud-study-jams-2025-pgcc.onrender.com",
-    ],
+    allow_origins=["*"],  # Allow all origins in development
     allow_credentials=True,
-    allow_methods=["GET", "POST", "OPTIONS"],
-    allow_headers=["*"],
+    allow_methods=["*"],  # Allow all methods
+    allow_headers=["*"],  # Allow all headers
+    expose_headers=["*"]  # Expose all headers
 )
 
-# Get the path to data.json
+# Set up paths
 script_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.dirname(script_dir)
+main_dir = os.path.join(project_root, 'main')
+
 # Use a writable directory on Render
 if os.environ.get('RENDER'):
     data_path = '/tmp/data.json'
+    # Copy initial data.json to /tmp if it doesn't exist
+    if not os.path.exists(data_path):
+        import shutil
+        source_data = os.path.join(main_dir, 'data.json')
+        if os.path.exists(source_data):
+            shutil.copy2(source_data, data_path)
 else:
-    data_path = os.path.join(os.path.dirname(script_dir), 'main', 'data.json')
+    data_path = os.path.join(main_dir, 'data.json')
+
+# Mount the static files directory
+app.mount("/static", StaticFiles(directory=main_dir), name="static")
 
 @app.get("/data")
 async def get_data():
@@ -88,6 +94,16 @@ async def refresh_data():
             status_code=500,
             detail=str(e)
         )
+
+@app.get("/")
+async def root():
+    """Serve the index.html file"""
+    index_path = os.path.join(main_dir, 'index.html')
+    if os.path.exists(index_path):
+        with open(index_path, 'r') as f:
+            content = f.read()
+        return HTMLResponse(content=content)
+    raise HTTPException(status_code=404, detail="index.html not found")
 
 @app.get("/health")
 async def health():
