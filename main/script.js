@@ -208,7 +208,7 @@ if (refreshBtn && refreshStatus && refreshIcon && refreshText) {
     refreshStatus.style.color = '#4285f4';
     
     try {
-      const response = await fetch('http://localhost:5001/refresh', {
+      const response = await fetch('https://gdg-refresh-server.onrender.com/refresh', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

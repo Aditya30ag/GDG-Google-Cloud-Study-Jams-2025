@@ -1,1 +1,1 @@
-web: cd conversion && gunicorn refresh_server:app --timeout 300
+web: pip install -r conversion/requirements.txt && cd conversion && python -m gunicorn refresh_server:app --timeout 300

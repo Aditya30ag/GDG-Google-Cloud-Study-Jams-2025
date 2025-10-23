@@ -14,7 +14,7 @@ The site now has a **"Refresh Data"** button that automatically runs the scraper
    
    You should see:
    ```
-   Starting refresh server on http://localhost:5001
+   Starting refresh server on https://gdg-refresh-server.onrender.com
    Make sure to keep this running while using the site!
    ```
 
