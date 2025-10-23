@@ -45,7 +45,8 @@ if os.environ.get('RENDER'):
 else:
     data_path = os.path.join(main_dir, 'data.json')
 
-# Mount the static files directory
+# Mount the static files directories
+app.mount("/assets", StaticFiles(directory=os.path.join(main_dir, "assets")), name="assets")
 app.mount("/static", StaticFiles(directory=main_dir), name="static")
 
 @app.get("/data")

@@ -48,19 +48,24 @@ const updateData = async (filter, flag, bustCache = false) => {
       });
       
       if (!response.ok) {
-        console.error('Error refreshing data:', await response.text());
-        return;
+        const errorText = await response.text();
+        console.error('Error refreshing data:', errorText);
+        throw new Error(errorText);
       }
     } catch (error) {
       console.error('Error refreshing data:', error);
-      return;
+      throw error;
     }
   }
   
   try {
     // Add cache-busting parameter if needed
     const cacheBuster = bustCache ? `?t=${Date.now()}` : '';
-    let data = await (await fetch(`${serverUrl}/static/data.json${cacheBuster}`)).json();
+    const response = await fetch(`${serverUrl}/data${cacheBuster}`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch data');
+    }
+    let data = await response.json();
   
   // Get last modified time from data.json
   try {
@@ -221,8 +226,39 @@ const refreshText = document.getElementById('refresh-text');
 
 if (refreshBtn && refreshStatus && refreshIcon && refreshText) {
   refreshBtn.addEventListener('click', async () => {
-    // Disable button and show loading state
-    refreshBtn.disabled = true;
+    try {
+      // Disable button and show loading state
+      refreshBtn.disabled = true;
+      refreshIcon.classList.add('animate-spin');
+      refreshText.textContent = 'Refreshing...';
+      
+      // Update data with cache busting
+      await updateData('', '', true);
+      
+      // Show success state
+      refreshText.textContent = 'Refresh Data';
+      refreshStatus.textContent = 'Data updated successfully!';
+      refreshStatus.classList.remove('hidden');
+      setTimeout(() => {
+        refreshStatus.classList.add('hidden');
+      }, 3000);
+    } catch (error) {
+      // Show error state
+      refreshText.textContent = 'Refresh Failed';
+      refreshStatus.textContent = 'Failed to update data. Please try again.';
+      refreshStatus.classList.remove('hidden');
+      console.error('Refresh failed:', error);
+    } finally {
+      // Reset button state
+      refreshBtn.disabled = false;
+      refreshIcon.classList.remove('animate-spin');
+      setTimeout(() => {
+        refreshText.textContent = 'Refresh Data';
+      }, 2000);
+    }
+  });
+}
+    }
     refreshIcon.classList.add('spinner');
     refreshText.textContent = 'Refreshing...';
     
