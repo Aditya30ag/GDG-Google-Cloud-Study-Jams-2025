@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <!-- Primary Meta Tags -->
+    <title>GDG Bennett University - Cloud Study Jams 2025</title>
+
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome -->
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <link rel="shortcut icon" type="image/x-icon" href="assets/gdscfavi.png" />
+    
+    <style>
+      body {
+        font-family: 'Inter', sans-serif;
+      }
+      
+      /* Custom animations */
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      
+      .animate-fadeIn {
+        animation: fadeIn 0.6s ease-out;
+      }
+      
+      /* Gradient text */
+      .gradient-text {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+      
+      /* Custom scrollbar */
+      ::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
+      }
+      
+      ::-webkit-scrollbar-track {
+        background: #f1f1f1;
+      }
+      
+      ::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 5px;
+      }
+      
+      ::-webkit-scrollbar-thumb:hover {
+        background: #555;
+      }
+      
+      /* Loading spinner animation */
+      @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+      }
+      
+      .spinner {
+        animation: spin 1s linear infinite;
+      }
+      
+      /* Pulse animation for refresh status */
+      @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+      }
+      
+      .pulse {
+        animation: pulse 2s ease-in-out infinite;
+      }
+      
+      /* Slide in animation */
+      @keyframes slideIn {
+        from { transform: translateY(-10px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+      }
+      
+      .slide-in {
+        animation: slideIn 0.3s ease-out;
+      }
+    </style>
+  </head>
+
+  <body class="bg-gradient-to-br from-gray-50 to-blue-50 min-h-screen">
+    <!-- Header -->
+    <header class="bg-white shadow-md sticky top-0 z-50">
+      <div class="container mx-auto px-4 py-4 flex items-center justify-between">
+        <div class="flex items-center">
+          <a
+            href="https://gdg.community.dev/gdg-on-campus-bennett-university-greater-noida-india/"
+            target="_blank"
+            class="transition-transform hover:scale-105"
+          >
+            <img src="assets/gdg_bennett.png" alt="GDG Bennett logo" class="h-12 md:h-16" />
+          </a>
+        </div>
+        
+        <!-- Navigation Links -->
+        <nav class="hidden md:flex items-center space-x-4">
+          <a
+            href="https://gdg.community.dev/gdg-on-campus-bennett-university-greater-noida-india/"
+            target="_blank"
+            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+          >
+            Join Community
+          </a>
+          <a
+            href="https://www.linkedin.com/company/gdg-bu/"
+            target="_blank"
+            class="p-2 text-gray-600 hover:text-blue-600 transition-colors"
+            title="LinkedIn"
+          >
+            <i class="fab fa-linkedin text-2xl"></i>
+          </a>
+          <a
+            href="https://www.instagram.com/gdgbu_/"
+            target="_blank"
+            class="p-2 text-gray-600 hover:text-pink-600 transition-colors"
+            title="Instagram"
+          >
+            <i class="fab fa-instagram text-2xl"></i>
+          </a>
+          <a
+            href="https://x.com/gdgbu_"
+            target="_blank"
+            class="p-2 text-gray-600 hover:text-blue-400 transition-colors"
+            title="Twitter"
+          >
+            <i class="fab fa-twitter text-2xl"></i>
+          </a>
+        </nav>
+        
+        <!-- Mobile Menu Button -->
+        <button class="md:hidden p-2 text-gray-600" id="mobile-menu-btn">
+          <i class="fas fa-bars text-2xl"></i>
+        </button>
+      </div>
+      
+      <!-- Mobile Menu -->
+      <div id="mobile-menu" class="hidden md:hidden bg-white border-t">
+        <div class="container mx-auto px-4 py-4 flex flex-col space-y-3">
+          <a
+            href="https://gdg.community.dev/gdg-on-campus-bennett-university-greater-noida-india/"
+            target="_blank"
+            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-center"
+          >
+            Join Community
+          </a>
+          <div class="flex justify-center space-x-6">
+            <a href="https://www.linkedin.com/company/gdg-bu/" target="_blank" class="text-gray-600 hover:text-blue-600">
+              <i class="fab fa-linkedin text-2xl"></i>
+            </a>
+            <a href="https://www.instagram.com/gdgbu_/" target="_blank" class="text-gray-600 hover:text-pink-600">
+              <i class="fab fa-instagram text-2xl"></i>
+            </a>
+            <a href="https://x.com/gdgbu_" target="_blank" class="text-gray-600 hover:text-blue-400">
+              <i class="fab fa-twitter text-2xl"></i>
+            </a>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8 md:py-12">
+      <!-- Title Section -->
+      <div class="text-center mb-8 md:mb-12 animate-fadeIn">
+        <div class="flex items-center justify-center mb-4">
+          <img src="assets/cloudLg.png" alt="cloud logo" class="w-12 h-12 md:w-16 md:h-16 mr-3" />
+          <h1 class="text-3xl md:text-5xl font-bold flex flex-wrap items-center justify-center gap-2">
+            <span class="text-red-500">GDG</span>
+            <span class="text-blue-600">Cloud</span>
+            <span class="text-green-600">Study</span>
+            <span class="text-yellow-500">Jams</span>
+            <span class="text-orange-500">2025</span>
+          </h1>
+        </div>
+      </div>
+
+      <!-- Search and Controls -->
+      <div class="bg-white rounded-2xl shadow-lg p-6 mb-6 animate-fadeIn">
+        <div class="flex flex-col md:flex-row gap-4 items-stretch md:items-center">
+          <!-- Search Input -->
+          <div class="relative flex-1">
+            <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+            <input
+              id="input"
+              type="search"
+              placeholder="Search by name..."
+              class="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors"
+            />
+          </div>
+          
+          <!-- Sort Select -->
+          <select
+            id="sort-select"
+            class="px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors bg-white cursor-pointer"
+          >
+            <option value="courses">Sort: Total Completion</option>
+            <option value="totalBadges">Sort: Total Badges (skill + arcade)</option>
+            <option value="skill">Sort: # Skill Badges</option>
+            <option value="arcade">Sort: # Arcade Games</option>
+          </select>
+          
+          <!-- Refresh Button -->
+          <button
+            id="refresh-btn"
+            class="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all font-medium flex items-center justify-center gap-2 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg"
+          >
+            <i id="refresh-icon" class="fa-solid fa-sync"></i>
+            <span id="refresh-text">Refresh Data</span>
+          </button>
+        </div>
+        
+        <!-- Refresh Status -->
+        <div id="refresh-status" class="mt-4 text-sm font-medium text-center min-h-[24px]"></div>
+      </div>
+
+      <!-- Last Update Alert -->
+      <div class="bg-blue-50 border-l-4 border-blue-500 rounded-lg p-4 mb-6 animate-fadeIn">
+        <p id="last-update-text" class="text-sm md:text-base text-blue-800 font-medium">
+          Loading last update time...
+        </p>
+      </div>
+
+      <!-- Progress Section -->
+      <div class="bg-white rounded-2xl shadow-lg p-6 md:p-8 mb-6 animate-fadeIn">
+        <div class="mb-4">
+          <p class="text-center text-sm md:text-base text-gray-700 mb-4">
+            <span class="font-semibold">Milestones:</span> 1) 50 completions • 2) 75 completions • 3) 100 completions
+            <br class="md:hidden" />
+            <span class="text-gray-600">— Completion requires 19 skill badges + at least 1 arcade game 🔒</span>
+          </p>
+        </div>
+        
+        <!-- Progress Bar -->
+        <div class="relative w-full bg-gray-200 rounded-full h-8 md:h-10 overflow-hidden mb-4">
+          <div 
+            class="progress-bar absolute top-0 left-0 h-full bg-gradient-to-r from-green-500 to-green-600 transition-all duration-1000 ease-out flex items-center justify-end pr-3"
+            style="width: 0%"
+          >
+            <span class="progress-label left text-white font-bold text-sm"></span>
+          </div>
+        </div>
+        
+        <!-- Progress Details -->
+        <div class="flex flex-col md:flex-row justify-between items-center gap-2 text-sm md:text-base">
+          <div id="milestone-label" class="font-semibold text-gray-700">Active milestone: 50</div>
+          <div class="progress-label right font-semibold text-gray-700"></div>
+          <div id="milestone-status" class="text-green-600 font-semibold"></div>
+        </div>
+      </div>
+
+      <!-- Table Section -->
+      <div class="bg-white rounded-2xl shadow-lg overflow-hidden animate-fadeIn">
+        <div class="overflow-x-auto">
+          <table class="w-full">
+            <thead class="bg-gradient-to-r from-blue-600 to-blue-700 text-white">
+              <tr>
+                <th class="px-4 py-4 text-left text-xs md:text-sm font-semibold">Sr. No.</th>
+                <th class="px-4 py-4 text-left text-xs md:text-sm font-semibold">Name</th>
+                <th class="px-4 py-4 text-center text-xs md:text-sm font-semibold">Access Code</th>
+                <th class="px-4 py-4 text-center text-xs md:text-sm font-semibold">All Completed</th>
+                <th class="px-4 py-4 text-center text-xs md:text-sm font-semibold"># Skill Badges</th>
+                <th class="px-4 py-4 text-left text-xs md:text-sm font-semibold">Skill Badges</th>
+                <th class="px-4 py-4 text-center text-xs md:text-sm font-semibold"># Arcade Games</th>
+                <th class="px-4 py-4 text-left text-xs md:text-sm font-semibold">Arcade Games</th>
+                <th class="px-4 py-4 text-center text-xs md:text-sm font-semibold">Gen AI</th>
+                <th class="px-4 py-4 text-center text-xs md:text-sm font-semibold">Total</th>
+              </tr>
+            </thead>
+            <tbody id="gccp_body" class="divide-y divide-gray-200">
+              <!-- Data will be populated by JavaScript -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white mt-16">
+      <div class="container mx-auto px-4 py-12">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <!-- Left Section -->
+          <div class="text-center md:text-left">
+            <div class="flex items-center justify-center md:justify-start mb-4">
+              <img src="assets/gdscfavi.png" alt="GDG Logo" class="w-16 h-16" />
+            </div>
+            <h3 class="text-2xl font-bold text-yellow-400 mb-2">GDG Bennett University</h3>
+            <p class="text-gray-400 text-sm">Empowering tomorrow's innovators</p>
+          </div>
+
+          <!-- Center Section -->
+          <div class="text-center">
+            <h4 class="text-lg font-semibold mb-4">Contact</h4>
+            <div class="space-y-3">
+              <div class="flex items-center justify-center gap-3">
+                <div class="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center">
+                  <i class="fa fa-location-dot text-gray-400"></i>
+                </div>
+                <a href="https://www.bennett.edu.in/" target="_blank" class="text-yellow-400 hover:text-yellow-300 transition-colors">
+                  Bennett University
+                </a>
+              </div>
+              <div class="flex items-center justify-center gap-3">
+                <div class="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center">
+                  <i class="fa fa-envelope text-gray-400"></i>
+                </div>
+                <a href="mailto:gdsc@bennett.edu.in" class="text-yellow-400 hover:text-yellow-300 transition-colors">
+                  gdsc@bennett.edu.in
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Section -->
+          <div class="text-center md:text-right">
+            <h4 class="text-lg font-semibold mb-4">About the Community</h4>
+            <p class="text-gray-400 text-sm mb-4 leading-relaxed">
+              Welcome to GDG, where we empower tomorrow's innovators! We're a passionate tech community 
+              committed to learning, collaborating, and driving positive change.
+            </p>
+            <div class="flex justify-center md:justify-end gap-3">
+              <a
+                href="https://www.linkedin.com/company/gdg-bu/"
+                target="_blank"
+                class="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-blue-600 transition-colors"
+              >
+                <i class="fab fa-linkedin text-xl"></i>
+              </a>
+              <a
+                href="https://www.instagram.com/gdgbu_/"
+                target="_blank"
+                class="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-pink-600 transition-colors"
+              >
+                <i class="fab fa-instagram text-xl"></i>
+              </a>
+              <a
+                href="https://x.com/gdgbu_"
+                target="_blank"
+                class="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-blue-400 transition-colors"
+              >
+                <i class="fab fa-twitter text-xl"></i>
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Copyright -->
+        <div class="border-t border-gray-800 mt-8 pt-6 text-center">
+          <p class="text-gray-400 text-sm">
+            &copy; 2025 GDG Bennett University. All rights reserved.
+          </p>
+        </div>
+      </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script>
+      // Mobile menu toggle
+      const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+      const mobileMenu = document.getElementById('mobile-menu');
+      
+      if (mobileMenuBtn && mobileMenu) {
+        mobileMenuBtn.addEventListener('click', () => {
+          mobileMenu.classList.toggle('hidden');
+        });
+      }
+    </script>
+    <script src="script.js"></script>
+  </body>
+</html>
