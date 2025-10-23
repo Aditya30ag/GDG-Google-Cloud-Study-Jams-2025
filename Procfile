@@ -1,1 +1,1 @@
-web: pip install -r conversion/requirements.txt && cd conversion && python -m gunicorn refresh_server:app --timeout 300
+web: cd conversion && uvicorn refresh_server:app --host 0.0.0.0 --port $PORT --workers 4

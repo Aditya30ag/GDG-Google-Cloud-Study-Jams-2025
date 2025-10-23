@@ -1,21 +1,39 @@
 #!/usr/bin/env python3
 """
-Simple Flask server to trigger the scraper when refresh is clicked on the site.
+FastAPI server to trigger the scraper when refresh is clicked on the site.
 """
-from flask import Flask, jsonify
-from flask_cors import CORS
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 import subprocess
 import sys
 import os
 from datetime import datetime
+from typing import Dict, Optional
 
-app = Flask(__name__)
-# Allow CORS for all domains in development, configure specifically for production
-CORS(app, origins=['*'])  # You should restrict this in production
+app = FastAPI(
+    title="GDG Cloud Study Jams Refresh API",
+    description="API to refresh and update study jams progress data",
+    version="1.0.0"
+)
 
-@app.route('/refresh', methods=['POST'])
-def refresh_data():
-    """Run the scraper and return results"""
+# Configure CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Restrict this in production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+@app.post("/refresh", response_model=Dict[str, Optional[str]])
+async def refresh_data():
+    """
+    Run the scraper and return results
+    
+    Returns:
+        dict: Contains success status, output and any error messages
+    """
     try:
         # Get the path to scrape_profiles.py
         script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -30,32 +48,40 @@ def refresh_data():
             timeout=300  # 5 minute timeout
         )
         
-        return jsonify({
-            'success': result.returncode == 0,
+        return {
+            'success': str(result.returncode == 0),
             'output': result.stdout,
             'error': result.stderr if result.returncode != 0 else None
-        })
+        }
     except subprocess.TimeoutExpired:
-        return jsonify({
-            'success': False,
-            'error': 'Scraper timed out after 5 minutes'
-        }), 500
+        raise HTTPException(
+            status_code=500,
+            detail="Scraper timed out after 5 minutes"
+        )
     except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
+        )
 
-@app.route('/health', methods=['GET'])
-def health():
+@app.get("/health")
+async def health():
     """Health check endpoint"""
-    return jsonify({'status': 'ok'})
+    return {"status": "ok"}
 
 if __name__ == '__main__':
+    import uvicorn
+    
     port = int(os.environ.get('PORT', 5001))
     host = os.environ.get('HOST', '0.0.0.0')
-    debug = os.environ.get('DEBUG', 'False').lower() == 'true'
     
     print(f"Starting refresh server on http://{host}:{port}")
     print("Make sure to keep this running while using the site!")
-    app.run(host=host, port=port, debug=debug)
+    print("API Documentation available at: http://localhost:5001/docs")
+    
+    uvicorn.run(
+        "refresh_server:app",
+        host=host,
+        port=port,
+        reload=True if os.environ.get('DEBUG', 'False').lower() == 'true' else False
+    )
