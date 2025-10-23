@@ -20,9 +20,15 @@ app = FastAPI(
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Restrict this in production
+    allow_origins=[
+        "https://aditya30ag.github.io",
+        "http://localhost:8000",
+        "http://localhost:5000",
+        "http://127.0.0.1:8000",
+        "http://127.0.0.1:5000",
+    ],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
 

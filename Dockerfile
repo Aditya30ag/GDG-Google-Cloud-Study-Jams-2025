@@ -21,8 +21,8 @@ RUN pip install --upgrade pip && \
 # Copy the rest of the application
 COPY . .
 
-# Expose port if your application needs it
-EXPOSE 8000
+# Expose port 10000
+EXPOSE 10000
 
-# Command to run the application
-CMD ["python", "conversion/refresh_server.py"]
+# Command to run the application with uvicorn
+CMD ["uvicorn", "conversion.refresh_server:app", "--host", "0.0.0.0", "--port", "10000"]
