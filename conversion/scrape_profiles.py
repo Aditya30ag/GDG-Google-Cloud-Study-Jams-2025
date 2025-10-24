@@ -41,13 +41,28 @@ except Exception:
 def extract_badges_from_html(text):
     soup = BeautifulSoup(text, "html.parser")
     badges = []
+    arcade_games = []
 
     # Helper to skip obvious negative messages (e.g. "hasn't earned any badges yet")
     def is_negative_phrase(s: str) -> bool:
         s2 = s.lower()
         return "hasn't earned" in s2 or "has not earned" in s2 or "no badges" in s2 or "no skill badges" in s2
 
-    seen = set()
+    # Helper to check if a title is an arcade game
+    def is_arcade_game(title: str) -> bool:
+        title_lower = title.lower()
+        # Arcade games typically have "level" and "generative ai" or similar patterns
+        arcade_patterns = [
+            'level 1:',
+            'level 2:',
+            'level 3:',
+            'generative ai',
+            'gen ai'
+        ]
+        return any(pattern in title_lower for pattern in arcade_patterns)
+
+    seen_badges = set()
+    seen_arcade = set()
 
     # Primary targeted strategy: look for profile-badges/profile-badge blocks (observed on Cloud Skills Boost)
     # These blocks contain a title span and an earned-date span.
@@ -72,20 +87,26 @@ def extract_badges_from_html(text):
         earned = earned_el.get_text(separator=' ', strip=True) if earned_el else ''
 
         if title:
-            # normalize badge name and attach [Skill Badge] for compatibility with existing data
+            # normalize badge name
             bnorm = re.sub(r'\s+', ' ', title).strip()
-            if earned:
-                # Optionally include earned date in parentheses to preserve that info
-                bnorm = f"{bnorm} [Skill Badge]"
+            
+            # Check if this is an arcade game or a skill badge
+            if is_arcade_game(bnorm):
+                # This is an arcade game
+                bnorm_game = f"{bnorm} [Game]"
+                if bnorm_game not in seen_arcade:
+                    seen_arcade.add(bnorm_game)
+                    arcade_games.append(bnorm_game)
             else:
-                bnorm = f"{bnorm} [Skill Badge]"
-            if bnorm not in seen:
-                seen.add(bnorm)
-                badges.append(bnorm)
+                # This is a skill badge
+                bnorm_badge = f"{bnorm} [Skill Badge]"
+                if bnorm_badge not in seen_badges:
+                    seen_badges.add(bnorm_badge)
+                    badges.append(bnorm_badge)
 
     # If we found targeted blocks, return them (they are authoritative)
-    if badges:
-        return badges
+    if badges or arcade_games:
+        return {'badges': badges, 'arcade_games': arcade_games}
 
     # Primary strategy: find explicit badge containers by class name patterns and extract list items / anchors inside them.
     container_class_patterns = [r'badg', r'skill-badg', r'badge-list', r'badges-list', r'public-profile__badges', r'profile-badges']
@@ -104,9 +125,16 @@ def extract_badges_from_html(text):
             # Accept if it explicitly looks like a skill badge: contains '[Skill Badge]' or 'skill badge' or the anchor points to a badge-like path
             if '[Skill Badge]' in txt or 'skill badge' in txt.lower() or '/badges' in href or '/quests' in href or '/skill' in href:
                 bnorm = re.sub(r'\s+', ' ', txt).strip()
-                if bnorm and bnorm not in seen:
-                    seen.add(bnorm)
-                    badges.append(bnorm)
+                # Check if it's an arcade game
+                if is_arcade_game(bnorm):
+                    bnorm_game = f"{bnorm} [Game]" if '[Game]' not in bnorm else bnorm
+                    if bnorm_game not in seen_arcade:
+                        seen_arcade.add(bnorm_game)
+                        arcade_games.append(bnorm_game)
+                else:
+                    if bnorm and bnorm not in seen_badges:
+                        seen_badges.add(bnorm)
+                        badges.append(bnorm)
 
     # Secondary strategy: anchors that look like badge links anywhere on the page (be conservative)
     for a in soup.find_all('a', href=True):
@@ -118,20 +146,36 @@ def extract_badges_from_html(text):
             continue
         if '/badges' in href or 'badge' in href.lower() or '/quests' in href:
             bnorm = re.sub(r'\s+', ' ', txt).strip()
-            if bnorm and bnorm not in seen:
-                seen.add(bnorm)
-                badges.append(bnorm)
+            # Check if it's an arcade game
+            if is_arcade_game(bnorm):
+                bnorm_game = f"{bnorm} [Game]" if '[Game]' not in bnorm else bnorm
+                if bnorm_game not in seen_arcade:
+                    seen_arcade.add(bnorm_game)
+                    arcade_games.append(bnorm_game)
+            else:
+                if bnorm and bnorm not in seen_badges:
+                    seen_badges.add(bnorm)
+                    badges.append(bnorm)
 
     # Tertiary fallback: regex for bracketed badge names (rare but useful)
     for m in re.finditer(r"([A-Za-z0-9\-:,() '&]+\[Skill Badge\])", text):
         b = m.group(1).strip()
         if is_negative_phrase(b):
             continue
-        if b not in seen:
-            seen.add(b)
+        if b not in seen_badges:
+            seen_badges.add(b)
             badges.append(b)
+    
+    # Also look for arcade game patterns
+    for m in re.finditer(r"([A-Za-z0-9\-:,() '&]+\[Game\])", text):
+        g = m.group(1).strip()
+        if is_negative_phrase(g):
+            continue
+        if g not in seen_arcade:
+            seen_arcade.add(g)
+            arcade_games.append(g)
 
-    return badges
+    return {'badges': badges, 'arcade_games': arcade_games}
 
 
 def fetch_profile(url, timeout=15):
@@ -142,10 +186,10 @@ def fetch_profile(url, timeout=15):
         r = requests.get(url, headers=headers, timeout=timeout)
         r.raise_for_status()
     except Exception as e:
-        return {'url': url, 'error': str(e), 'badges': []}
+        return {'url': url, 'error': str(e), 'badges': [], 'arcade_games': []}
 
-    badges = extract_badges_from_html(r.text)
-    return {'url': url, 'badges': badges}
+    result = extract_badges_from_html(r.text)
+    return {'url': url, 'badges': result.get('badges', []), 'arcade_games': result.get('arcade_games', [])}
 
 
 def worker(entry, timeout=15, delay=1.0):
@@ -192,7 +236,8 @@ def main():
 
             url = result.get('url')
             badges = result.get('badges', [])
-            if not badges and result.get('error'):
+            arcade_games = result.get('arcade_games', [])
+            if not badges and not arcade_games and result.get('error'):
                 errors += 1
                 err_msg = result.get('error')
                 print(f'Error fetching {url}: {err_msg}')
@@ -219,26 +264,28 @@ def main():
                 print(f'Warning: fetched {url} but no matching record found in input')
                 continue
 
-            old_count = int(matched.get('# of Skill Badges Completed') or 0)
-            new_count = len(badges)
-            if new_count > old_count:
-                print(f"Update {matched.get('User Name')}: badges {old_count} -> {new_count}")
-                matched['# of Skill Badges Completed'] = new_count
+            old_badge_count = int(matched.get('# of Skill Badges Completed') or 0)
+            old_arcade_count = int(matched.get('# of Arcade Games Completed') or 0)
+            new_badge_count = len(badges)
+            new_arcade_count = len(arcade_games)
+            
+            # Update if we found more badges or arcade games
+            if new_badge_count > old_badge_count or new_arcade_count > old_arcade_count:
+                print(f"Update {matched.get('User Name')}: badges {old_badge_count} -> {new_badge_count}, arcade {old_arcade_count} -> {new_arcade_count}")
+                
+                # Update skill badges
+                matched['# of Skill Badges Completed'] = new_badge_count
                 matched['Names of Completed Skill Badges'] = ' | '.join(badges)
+                
+                # Update arcade games
+                matched['# of Arcade Games Completed'] = new_arcade_count
+                matched['Names of Completed Arcade Games'] = ' | '.join(arcade_games)
+                
                 # Recalculate total courses completed (badges + arcade games)
-                try:
-                    arcade_count = int(matched.get('# of Arcade Games Completed') or 0)
-                except Exception:
-                    # fallback: try to parse numeric from string
-                    try:
-                        arcade_count = int(str(matched.get('# of Arcade Games Completed') or '0').strip())
-                    except Exception:
-                        arcade_count = 0
-
-                matched['# of Courses Completed'] = new_count + arcade_count
+                matched['# of Courses Completed'] = new_badge_count + new_arcade_count
 
                 # Update completion flags according to business rule: >=19 skill badges AND >=1 arcade game
-                completion_met = (new_count >= 19 and arcade_count >= 1)
+                completion_met = (new_badge_count >= 19 and new_arcade_count >= 1)
                 # preserve both possible keys used in data
                 if 'All Skill Badges & Games Completed' in matched:
                     matched['All Skill Badges & Games Completed'] = 'Yes' if completion_met else 'No'
@@ -246,7 +293,7 @@ def main():
 
                 # Also update arcade completion short flag if present
                 if 'Gen AI Arcade Game Completion' in matched:
-                    matched['Gen AI Arcade Game Completion'] = '1' if arcade_count > 0 else '0'
+                    matched['Gen AI Arcade Game Completion'] = '1' if new_arcade_count > 0 else '0'
 
                 updated += 1
 
@@ -273,6 +320,7 @@ def main():
                     continue
 
                 badges = result.get('badges', [])
+                arcade_games = result.get('arcade_games', [])
                 # find matched record by url again
                 matched = None
                 for e in data:
@@ -290,28 +338,30 @@ def main():
                     print(f'Warning: retry fetched {url} but no matching record found in input')
                     continue
 
-                old_count = int(matched.get('# of Skill Badges Completed') or 0)
-                new_count = len(badges)
-                if new_count > old_count:
-                    print(f"Update (retry) {matched.get('User Name')}: badges {old_count} -> {new_count}")
-                    matched['# of Skill Badges Completed'] = new_count
+                old_badge_count = int(matched.get('# of Skill Badges Completed') or 0)
+                old_arcade_count = int(matched.get('# of Arcade Games Completed') or 0)
+                new_badge_count = len(badges)
+                new_arcade_count = len(arcade_games)
+                
+                if new_badge_count > old_badge_count or new_arcade_count > old_arcade_count:
+                    print(f"Update (retry) {matched.get('User Name')}: badges {old_badge_count} -> {new_badge_count}, arcade {old_arcade_count} -> {new_arcade_count}")
+                    
+                    # Update skill badges
+                    matched['# of Skill Badges Completed'] = new_badge_count
                     matched['Names of Completed Skill Badges'] = ' | '.join(badges)
-                    # Recalculate totals and flags as above
-                    try:
-                        arcade_count = int(matched.get('# of Arcade Games Completed') or 0)
-                    except Exception:
-                        try:
-                            arcade_count = int(str(matched.get('# of Arcade Games Completed') or '0').strip())
-                        except Exception:
-                            arcade_count = 0
-
-                    matched['# of Courses Completed'] = new_count + arcade_count
-                    completion_met = (new_count >= 19 and arcade_count >= 1)
+                    
+                    # Update arcade games
+                    matched['# of Arcade Games Completed'] = new_arcade_count
+                    matched['Names of Completed Arcade Games'] = ' | '.join(arcade_games)
+                    
+                    # Recalculate totals and flags
+                    matched['# of Courses Completed'] = new_badge_count + new_arcade_count
+                    completion_met = (new_badge_count >= 19 and new_arcade_count >= 1)
                     if 'All Skill Badges & Games Completed' in matched:
                         matched['All Skill Badges & Games Completed'] = 'Yes' if completion_met else 'No'
                     matched['All 3 Pathways Completed - Yes or No'] = 'Yes' if completion_met else 'No'
                     if 'Gen AI Arcade Game Completion' in matched:
-                        matched['Gen AI Arcade Game Completion'] = '1' if arcade_count > 0 else '0'
+                        matched['Gen AI Arcade Game Completion'] = '1' if new_arcade_count > 0 else '0'
 
                     updated += 1
                 time.sleep(args.delay)
