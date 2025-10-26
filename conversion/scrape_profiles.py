@@ -51,15 +51,15 @@ def extract_badges_from_html(text):
     # Helper to check if a title is an arcade game
     def is_arcade_game(title: str) -> bool:
         title_lower = title.lower()
-        # Arcade games typically have "level" and "generative ai" or similar patterns
-        arcade_patterns = [
-            'level 1:',
-            'level 2:',
-            'level 3:',
-            'generative ai',
-            'gen ai'
-        ]
-        return any(pattern in title_lower for pattern in arcade_patterns)
+        # Arcade games on Cloud Skills Boost are usually explicit "Level X:" items
+        # Avoid classifying any title that merely mentions "generative ai" as an
+        # arcade game (e.g. "Develop Gen AI Apps with Gemini and Streamlit").
+        # Only treat titles containing an explicit "Level <number>" marker as
+        # arcade games.
+        # Match examples: "Level 1: ...", "Level 2 - ...", "level 3: Generative AI"
+        if re.search(r"\blevel\s*\d+\b", title_lower):
+            return True
+        return False
 
     seen_badges = set()
     seen_arcade = set()
